@@ -4,6 +4,7 @@ from datetime import datetime
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from src.config import settings
 
@@ -28,18 +29,18 @@ async def cmd_start(message: Message) -> None:
 async def cmd_ping(message: Message, bot: Bot) -> None:
     me = await bot.get_me()
     now = datetime.now(tz=settings.tz).strftime("%Y-%m-%d %H:%M:%S %Z")
-    await message.answer(f"pong\nбот: @{me.username}\nвремя ({settings.default_timezone}): {now}")
+    await message.answer(
+        f"pong\nбот: @{me.username}\nвремя ({settings.default_timezone}): {now}"
+    )
 
 
 @router.message(Command("chatid"))
 async def cmd_chatid(message: Message) -> None:
     chat = message.chat
-    text = (
-        f"chat_id: `{chat.id}`\n"
-        f"тип: {chat.type}\n"
-        f"название: {chat.title or chat.full_name or '—'}"
+    title = chat.title or getattr(chat, "full_name", None) or "—"
+    await message.answer(
+        f"chat_id: {chat.id}\nтип: {chat.type}\nназвание: {title}"
     )
-    await message.answer(text, parse_mode="Markdown")
     log.info("chatid_requested", extra={"chat_id": chat.id, "type": chat.type})
 
 
@@ -50,22 +51,17 @@ async def cmd_whoami(message: Message) -> None:
         await message.answer("Не удалось определить пользователя.")
         return
     is_admin_flag = "да" if _is_admin(user.id) else "нет"
+    username = f"@{user.username}" if user.username else "—"
     await message.answer(
-        f"user_id: `{user.id}`\n"
-        f"username: @{user.username or '—'}\n"
-        f"админ: {is_admin_flag}",
-        parse_mode="Markdown",
+        f"user_id: {user.id}\nusername: {username}\nадмин: {is_admin_flag}"
     )
 
 
 @router.message(Command("jobs"), F.chat.type == "private")
-async def cmd_jobs(message: Message) -> None:
+async def cmd_jobs(message: Message, scheduler: AsyncIOScheduler | None = None) -> None:
     if not _is_admin(message.from_user.id if message.from_user else None):
         return
 
-    from src import main as main_module
-
-    scheduler = main_module.scheduler_ref
     if scheduler is None:
         await message.answer("Планировщик ещё не поднят.")
         return
@@ -77,6 +73,10 @@ async def cmd_jobs(message: Message) -> None:
 
     lines = []
     for job in jobs:
-        next_run = job.next_run_time.strftime("%Y-%m-%d %H:%M %Z") if job.next_run_time else "—"
-        lines.append(f"• `{job.id}` → следующий запуск: {next_run}")
-    await message.answer("\n".join(lines), parse_mode="Markdown")
+        next_run = (
+            job.next_run_time.strftime("%Y-%m-%d %H:%M %Z")
+            if job.next_run_time
+            else "—"
+        )
+        lines.append(f"• {job.id} → следующий запуск: {next_run}")
+    await message.answer("\n".join(lines))

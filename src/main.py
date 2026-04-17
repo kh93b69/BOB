@@ -3,14 +3,11 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from src.config import settings
 from src.handlers import router
 from src.schedule_loader import load_schedule
 from src.scheduler_service import build_scheduler
-
-scheduler_ref: AsyncIOScheduler | None = None
 
 
 def _setup_logging() -> None:
@@ -35,10 +32,9 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
 
-    global scheduler_ref
     scheduler = build_scheduler(bot, reminders)
-    scheduler_ref = scheduler
     scheduler.start()
+    dp["scheduler"] = scheduler
 
     me = await bot.get_me()
     log.info("bot started: @%s (id=%s)", me.username, me.id)
