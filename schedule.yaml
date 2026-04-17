@@ -10,10 +10,9 @@
 #   enabled       — true/false (можно временно выключить без удаления)
 
 reminders:
-  # ВРЕМЕННО: smoke-test — раз в минуту. После подтверждения работы меняем на нормальный график.
-  - id: smoke-test
+  - id: daily-hw-evening
     chat_id: -1003403579595
-    text: "🧪 Smoke-test: бот БОБ живой. Это тестовое напоминание, скоро отключу."
-    cron: "* * * * *"
+    text: "📚 Напоминаю: сегодня дедлайн по ДЗ. Не забудьте сдать!"
+    cron: "0 19 * * *"        # каждый день в 19:00 (Asia/Almaty)
     timezone: Asia/Almaty
     enabled: true
