@@ -1,0 +1,17 @@
+[project]
+name = "bob-bot"
+version = "0.1.0"
+description = "Telegram-бот БОБ: напоминания о сдаче ДЗ в общем чате"
+requires-python = ">=3.12"
+dependencies = [
+    "aiogram>=3.13,<4.0",
+    "apscheduler>=3.10,<4.0",
+    "pydantic>=2.8,<3.0",
+    "pydantic-settings>=2.5,<3.0",
+    "pyyaml>=6.0,<7.0",
+    "tzdata>=2024.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
